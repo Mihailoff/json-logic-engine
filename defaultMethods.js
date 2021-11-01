@@ -8,32 +8,14 @@ import { build, buildString } from './compiler.js'
 import chainingSupported from './utilities/chainingSupported.js'
 import InvalidControlInput from './errors/InvalidControlInput.js'
 import YieldingIterators from './yieldingIterators.js'
-
-function isDeterministic (method, engine, buildState) {
-  if (Array.isArray(method)) {
-    return method.every((i) => isDeterministic(i, engine, buildState))
-  }
-  if (method && typeof method === 'object') {
-    const func = Object.keys(method)[0]
-    const lower = method[func]
-    if (engine.methods[func].traverse === false) {
-      return typeof engine.methods[func].deterministic === 'function'
-        ? engine.methods[func].deterministic(lower, buildState)
-        : engine.methods[func].deterministic
-    }
-    return typeof engine.methods[func].deterministic === 'function'
-      ? engine.methods[func].deterministic(lower, buildState)
-      : engine.methods[func].deterministic &&
-          isDeterministic(lower, engine, buildState)
-  }
-  return true
-}
+import isDeterministic from './utilities/isDeterministic.js'
 
 const defaultMethods = {
+  truthy: Boolean,
+
   '+': (data) => [].concat(data).reduce((a, b) => +a + +b, 0),
   '*': (data) => data.reduce((a, b) => +a * +b),
   '/': (data) => data.reduce((a, b) => +a / +b),
-
   '-': (data) =>
   // @ts-ignore Type checking is incorrect on the following line.
     ((a) => (a.length === 1 ? (a[0] = -a[0]) : a) & 0 || a)(
@@ -78,7 +60,7 @@ const defaultMethods = {
         })
 
         // if the condition is true, run the true branch
-        if (test) {
+        if (engine.methods.truthy(test)) {
           return engine.run(onTrue, context, {
             above
           })
@@ -119,7 +101,7 @@ const defaultMethods = {
         })
 
         // if the condition is true, run the true branch
-        if (test) {
+        if (engine.methods.truthy(test)) {
           return engine.run(onTrue, context, {
             above
           })

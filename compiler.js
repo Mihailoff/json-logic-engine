@@ -13,6 +13,7 @@ import declareSync from './utilities/declareSync.js'
 // asyncIterators is required for the compiler to operate as intended.
 // eslint-disable-next-line no-unused-vars
 import asyncIterators from './async_iterators.js'
+import isDeterministic from './utilities/isDeterministic.js'
 
 /**
  * @typedef BuildState
@@ -44,37 +45,6 @@ function isPrimitive (x) {
     x === undefined ||
     ['Number', 'String', 'Boolean', 'Object'].includes(x.constructor.name)
   )
-}
-
-/**
- * Checks if the method & its inputs are deterministic.
- * @param {*} method
- * @param {*} engine
- * @param {BuildState} buildState
- * @returns
- */
-function isDeterministic (method, engine, buildState) {
-  if (Array.isArray(method)) {
-    return method.every((i) => isDeterministic(i, engine, buildState))
-  }
-
-  if (method && typeof method === 'object') {
-    const func = Object.keys(method)[0]
-    const lower = method[func]
-
-    if (engine.methods[func].traverse === false) {
-      return typeof engine.methods[func].deterministic === 'function'
-        ? engine.methods[func].deterministic(lower, buildState)
-        : engine.methods[func].deterministic
-    }
-
-    return typeof engine.methods[func].deterministic === 'function'
-      ? engine.methods[func].deterministic(lower, buildState)
-      : engine.methods[func].deterministic &&
-          isDeterministic(lower, engine, buildState)
-  }
-
-  return true
 }
 
 /**
